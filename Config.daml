@@ -1,0 +1,42 @@
+﻿<ArcGIS defaultAssembly="CircuitManagementDemo.dll" defaultNamespace="CircuitManagementDemo" xmlns="http://schemas.esri.com/DADF/Registry" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
+  <AddInInfo id="{bad839ad-08a8-450c-ae88-d88a103e2b4a}" version="1.0" desktopVersion="3.7.600" product="ArcGISPro">
+    <Name>CircuitManagementDemo</Name>
+    <Description>CircuitManagementDemo description</Description>
+    <Image>Images\AddinDesktop32.png</Image>
+    <Author>aas11333</Author>
+    <Company>Acme</Company>
+    <Date>3/7/2026 10:51:52 AM</Date>
+    <Subject>Framework</Subject>
+    <!-- Note subject can be one or more of these topics:
+                    Content, Framework, Editing, Geodatabase, Geometry, Geoprocessing, Layouts, Map Authoring, Map Exploration -->
+  </AddInInfo>
+  <modules>
+    <insertModule id="CircuitManagementDemo_Module" className="Module1" autoLoad="false" caption="Module1">
+      <!-- uncomment to have the control hosted on a separate tab-->
+      <tabs>
+        <!--<tab id="CircuitManagementDemo_Tab1" caption="New Tab">
+          <group refID="CircuitManagementDemo_Group1"/>
+        </tab>-->
+      </tabs>
+      <groups>
+        <!-- comment this out if you have no controls on the Addin tab to avoid
+              an empty group-->
+        <group id="CircuitManagementDemo_Group1" caption="Group 1" appearsOnAddInTab="true">
+          <!-- host controls within groups -->
+          <button refID="CircuitManagementDemo_CircuitManagementPane_ShowButton" size="large" />
+        </group>
+      </groups>
+      <controls>
+        <!-- add your controls here -->
+        <button id="CircuitManagementDemo_CircuitManagementPane_ShowButton" caption="Show CircuitManagementPane" className="CircuitManagementPane_ShowButton" loadOnClick="true" smallImage="GenericButtonPurple16" largeImage="GenericButtonPurple32">
+          <tooltip heading="Show Dockpane">Show Dockpane<disabledText /></tooltip>
+        </button>
+      </controls>
+      <dockPanes>
+        <dockPane id="CircuitManagementDemo_CircuitManagementPane" caption="CircuitManagementPane" smallImage="BexDog16" className="CircuitManagementPaneViewModel" dock="group" dockWith="esri_core_projectDockPane">
+          <content className="CircuitManagementPaneView" />
+        </dockPane>
+      </dockPanes>
+    </insertModule>
+  </modules>
+</ArcGIS>
