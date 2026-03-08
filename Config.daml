@@ -21,7 +21,7 @@
       <groups>
         <!-- comment this out if you have no controls on the Addin tab to avoid
               an empty group-->
-        <group id="CircuitManagementDemo_Group1" caption="Group 1" appearsOnAddInTab="true">
+        <group id="CircuitManagementDemo_Group1" caption="Demo Circuit" appearsOnAddInTab="true">
           <!-- host controls within groups -->
           <button refID="CircuitManagementDemo_CircuitManagementPane_ShowButton" size="large" />
         </group>
