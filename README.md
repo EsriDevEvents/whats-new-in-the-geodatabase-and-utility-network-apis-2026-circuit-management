@@ -1,4 +1,5 @@
 # ArcGIS Pro SDK for .NET What's New in the Geodatabase and Utility Network APIs
 
 ## Circuit Management Demo 
-![image](https://devtopia.esri.com/user-attachments/assets/f0efbb2b-aa11-46be-a164-21f1398f30d9)
+<img width="1312" height="679" alt="image" src="https://github.com/user-attachments/assets/be48a036-af82-4f0a-8d0a-35bdb2dd68e8" />
+
