@@ -201,8 +201,10 @@ namespace CircuitManagementDemo
             using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
             {
               CircuitFilter circuitFilter = new CircuitFilter([CircuitName]);
-              using (Circuit circuitToAlter = circuitManager.GetCircuits(circuitFilter).First())
+              using (Circuit circuitToAlter = circuitManager.GetCircuits(circuitFilter).FirstOrDefault())
               {
+                if (circuitToAlter == null)
+                  return;
                 using (Subcircuit subcircuit200Ghz = new Subcircuit(circuitManager))
                 {
                   subcircuit200Ghz.SetName("200GHzSubcircuit");
@@ -217,10 +219,13 @@ namespace CircuitManagementDemo
               }
 
               // Query after adding the subcircuit
-              using (Circuit alteredCircuit = circuitManager.GetCircuits(circuitFilter).First())
+              using (Circuit alteredCircuit = circuitManager.GetCircuits(circuitFilter).FirstOrDefault())
               {
+                if (alteredCircuit == null)
+                  return;
+
                 string circuitName = alteredCircuit.GetName();
-                string subcircuitName = alteredCircuit.GetSubcircuits().FirstOrDefault()?.GetName() ?? "none";
+                string subcircuitName = alteredCircuit.GetSubcircuits()?.FirstOrDefault()?.GetName() ?? "none";
                 MessageBox.Show($"Circuit '{circuitName}' updated. Subcircuit: '{subcircuitName}'");
               }
             }
