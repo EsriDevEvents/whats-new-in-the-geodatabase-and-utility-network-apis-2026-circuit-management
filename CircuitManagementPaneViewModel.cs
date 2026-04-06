@@ -22,6 +22,8 @@ namespace CircuitManagementDemo
 
     protected CircuitManagementPaneViewModel()
     {
+      if (MapView.Active == null)
+        return;
       _map = MapView.Active.Map;
       _featureLayer = _map.GetLayersAsFlattenedList().OfType<FeatureLayer>().FirstOrDefault();
     }
@@ -94,9 +96,12 @@ namespace CircuitManagementDemo
     /// <summary>
     /// Creates a non-sectioned circuit between two telecom elements in the utility network.
     /// </summary>
-    private void CreateCircuit()
+    private async void CreateCircuit()
     {
-      QueuedTask.Run(() =>
+      if (_featureLayer == null)
+        return;
+
+      await QueuedTask.Run(() =>
       {
         // OLT FROM
         // 16 ports (FirstUnit 1, LastUnit 16) are available on this element
@@ -107,57 +112,63 @@ namespace CircuitManagementDemo
         string stopGlobalID = "19F271EE-E25B-45D0-B671-6AC4C02E3DB7";
 
         using (Geodatabase geodatabase = _featureLayer.GetFeatureClass().GetDatastore() as Geodatabase)
-        using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
-        using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
         {
+          if (geodatabase == null)
+            return;
 
-          if (!utilityNetwork.HasTelecomNetwork)
+          using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
+          using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
           {
-            MessageBox.Show("The utility network does not have a telecom domain network");
-          }
-
-
-          // Get the telecom domain network from the utility network definition.
-          TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
-
-          using (NetworkSource networksource = telecomDomainNetwork.NetworkSources.First(f => f.Name.Replace(" ", "").Contains("TelcoJunctionObject")))
-          using (AssetGroup assetGroup = networksource.GetAssetGroup("Port"))
-          using (AssetType assetType = assetGroup.GetAssetType("Circuit Location"))
-          using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
-          {
-            // Create telecom elements Asset Type and GUID
-            TelecomElement telcoStartElement = utilityNetwork.CreateElement(assetType, new Guid(startGlobalID)) as TelecomElement;
-            TelecomElement telcoStopElement = utilityNetwork.CreateElement(assetType, new Guid(stopGlobalID)) as TelecomElement;
-
-            // Describe the circuit locations on the start and stop elements.
-            // This includes which ports on the element are being used for this circuit.            
-            CircuitLocation startCircuitLocation = new CircuitLocation(telcoStartElement)
+            if (!utilityNetwork.HasTelecomNetwork)
             {
-              // Out of 16 ports (FirstUnit 1, LastUnit 16) only 5 are being used for this circuit, so FirstUnit is 1 and LastUnit is 5.
-              FirstUnit = 1,
-              LastUnit = 5
-            };
+              MessageBox.Show("The utility network does not have a telecom domain network");
+              return;
+            }
 
-            CircuitLocation stopCircuitLocation = new CircuitLocation(telcoStopElement)
+            // Get the telecom domain network from the utility network definition.
+            TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
+            if (telecomDomainNetwork == null)
+              return;
+
+            using (NetworkSource networksource = telecomDomainNetwork.NetworkSources.First(f => f.Name.Replace(" ", "").Contains("TelcoJunctionObject")))
+            using (AssetGroup assetGroup = networksource.GetAssetGroup("Port"))
+            using (AssetType assetType = assetGroup.GetAssetType("Circuit Location"))
+            using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
             {
-              // Out of 16 ports (FirstUnit 1, LastUnit 16) only 5 are being used for this circuit, so FirstUnit is 1 and LastUnit is 5.
-              FirstUnit = 1,
-              LastUnit = 5
-            };
+              // Create telecom elements Asset Type and GUID
+              TelecomElement telcoStartElement = utilityNetwork.CreateElement(assetType, new Guid(startGlobalID)) as TelecomElement;
+              TelecomElement telcoStopElement = utilityNetwork.CreateElement(assetType, new Guid(stopGlobalID)) as TelecomElement;
 
-            // Create a circuit 
-            using (Circuit circuit = new Circuit(circuitManager))
-            {
-              circuit.SetName(CircuitName);
-              circuit.SetIsSectioned(false);
-              circuit.SetCircuitType(CircuitType.Physical);
-              circuit.SetStartLocation(startCircuitLocation);
-              circuit.SetStopLocation(stopCircuitLocation);
-              // .. set other properties as needed
+              // Describe the circuit locations on the start and stop elements.
+              // This includes which ports on the element are being used for this circuit.            
+              CircuitLocation startCircuitLocation = new CircuitLocation(telcoStartElement)
+              {
+                // Out of 16 ports (FirstUnit 1, LastUnit 16) only 5 are being used for this circuit, so FirstUnit is 1 and LastUnit is 5.
+                FirstUnit = 1,
+                LastUnit = 5
+              };
 
-              // circuitManager.Create(circuit); // For Corehost apps
+              CircuitLocation stopCircuitLocation = new CircuitLocation(telcoStopElement)
+              {
+                // Out of 16 ports (FirstUnit 1, LastUnit 16) only 5 are being used for this circuit, so FirstUnit is 1 and LastUnit is 5.
+                FirstUnit = 1,
+                LastUnit = 5
+              };
 
-              circuitManager.CreateInEditOperation(circuit);
+              // Create a circuit 
+              using (Circuit circuit = new Circuit(circuitManager))
+              {
+                circuit.SetName(CircuitName);
+                circuit.SetIsSectioned(false);
+                circuit.SetCircuitType(CircuitType.Physical);
+                circuit.SetStartLocation(startCircuitLocation);
+                circuit.SetStopLocation(stopCircuitLocation);
+                // .. set other properties as needed
+
+                // circuitManager.Create(circuit); // For Corehost apps
+
+                circuitManager.CreateInEditOperation(circuit);
+              }
             }
           }
         }
@@ -168,40 +179,50 @@ namespace CircuitManagementDemo
     /// Modifies the existing circuit
     /// Example modifies the circuit to have a subcircuit
     /// </summary>
-    private void AlterCircuit()
+    private async void AlterCircuit()
     {
-      QueuedTask.Run(() =>
+      if (_featureLayer == null)
+        return;
+
+      await QueuedTask.Run(() =>
       {
         using (Geodatabase geodatabase = _featureLayer.GetFeatureClass().GetDatastore() as Geodatabase)
-        using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
-        using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
         {
-          TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
-          using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
+          if (geodatabase == null)
+            return;
+
+          using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
+          using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
           {
-            CircuitFilter circuitFilter = new CircuitFilter([CircuitName]);
-            using (Circuit circuitToAlter = circuitManager.GetCircuits(circuitFilter).First())
-            {
-              var subcircuits = circuitToAlter.GetSubcircuits();
+            TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
+            if (telecomDomainNetwork == null)
+              return;
 
-              using (Subcircuit subcircuit200Ghz = new Subcircuit(circuitManager))
+            using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
+            {
+              CircuitFilter circuitFilter = new CircuitFilter([CircuitName]);
+              using (Circuit circuitToAlter = circuitManager.GetCircuits(circuitFilter).First())
               {
-                subcircuit200Ghz.SetName("200GHzSubcircuit");
-                // .. set other properties as needed
+                using (Subcircuit subcircuit200Ghz = new Subcircuit(circuitManager))
+                {
+                  subcircuit200Ghz.SetName("200GHzSubcircuit");
+                  // .. set other properties as needed
 
-                // Add the subcircuit to the circuit
-                circuitToAlter.SetSubcircuits(new List<Subcircuit>() { subcircuit200Ghz });
+                  // Add the subcircuit to the circuit
+                  circuitToAlter.SetSubcircuits(new List<Subcircuit>() { subcircuit200Ghz });
 
-                // circuitManager.Alter(circuitToAlter); // For Corehost apps
-                circuitManager.AlterInEditOperation(circuitToAlter);
+                  // circuitManager.Alter(circuitToAlter); // For Corehost apps
+                  circuitManager.AlterInEditOperation(circuitToAlter);
+                }
               }
-            }
 
-            // Query after adding the subcircuit
-            using (Circuit alteredCircuit = circuitManager.GetCircuits(circuitFilter).First())
-            {
-              var circuitName = alteredCircuit.GetName();
-              var subcircuits = alteredCircuit.GetSubcircuits().FirstOrDefault().GetName();
+              // Query after adding the subcircuit
+              using (Circuit alteredCircuit = circuitManager.GetCircuits(circuitFilter).First())
+              {
+                string circuitName = alteredCircuit.GetName();
+                string subcircuitName = alteredCircuit.GetSubcircuits().FirstOrDefault()?.GetName() ?? "none";
+                MessageBox.Show($"Circuit '{circuitName}' updated. Subcircuit: '{subcircuitName}'");
+              }
             }
           }
         }
@@ -213,22 +234,35 @@ namespace CircuitManagementDemo
     /// This includes checks such as whether the start and stop locations are valid
     /// State of the circuit (Dirty, Clean, Invalid) etc.
     /// </summary>
-    private void VerifyCircuit()
+    private async void VerifyCircuit()
     {
-      QueuedTask.Run(() =>
+      if (_featureLayer == null)
+        return;
+
+      await QueuedTask.Run(() =>
       {
         using (Geodatabase geodatabase = _featureLayer.GetFeatureClass().GetDatastore() as Geodatabase)
-        using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
-        using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
         {
-          TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
-          using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
-          {
-            // circuitManager.Verify([CircuitName]); // For Corehost apps
-            IReadOnlyList<VerifyCircuitResult> verifyCircuitResults = circuitManager.VerifyInEditOperation([CircuitName], false, null);
+          if (geodatabase == null)
+            return;
 
-            // Get first result for demonstration purposes
-            VerifyCircuitResult verifyCircuitResult = verifyCircuitResults.FirstOrDefault();
+          using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
+          using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
+          {
+            TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
+            if (telecomDomainNetwork == null)
+              return;
+
+            using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
+            {
+              // circuitManager.Verify([CircuitName]); // For Corehost apps
+              IReadOnlyList<VerifyCircuitResult> verifyCircuitResults = circuitManager.VerifyInEditOperation([CircuitName], false, null);
+
+              // Get first result for demonstration purposes
+              VerifyCircuitResult verifyCircuitResult = verifyCircuitResults.FirstOrDefault();
+              if (verifyCircuitResult != null)
+                MessageBox.Show($"Circuit '{verifyCircuitResult.CircuitName}' state: {verifyCircuitResult.CircuitState}");
+            }
           }
         }
       });
@@ -238,24 +272,33 @@ namespace CircuitManagementDemo
     /// This operation will change the circuit state to deleted. 
     /// The circuit will not be removed from the circuit table until the circuit is exported with acknowledgement. 
     /// </summary>
-    private void DeleteCircuit()
+    private async void DeleteCircuit()
     {
-      QueuedTask.Run(() =>
+      if (_featureLayer == null)
+        return;
+
+      await QueuedTask.Run(() =>
       {
         using (Geodatabase geodatabase = _featureLayer.GetFeatureClass().GetDatastore() as Geodatabase)
-        using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
-        using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
         {
-          TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
-          using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
+          if (geodatabase == null)
+            return;
+
+          using (UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(_utilityNetworkName))
+          using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
           {
-            // circuitManager.Delete([CircuitName]); // For Corehost apps
-            circuitManager.DeleteInEditOperation([CircuitName]);
+            TelecomDomainNetwork telecomDomainNetwork = utilityNetworkDefinition.GetDomainNetwork("Telco") as TelecomDomainNetwork;
+            if (telecomDomainNetwork == null)
+              return;
+
+            using (CircuitManager circuitManager = utilityNetwork.GetCircuitManager(telecomDomainNetwork))
+            {
+              // circuitManager.Delete([CircuitName]); // For Corehost apps
+              circuitManager.DeleteInEditOperation([CircuitName]);
+            }
           }
         }
       });
-
-      // 
     }
 
 
